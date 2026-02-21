@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lama Ventures | Client Portal</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050505;
+        --panel: #101010;
+        --line: #2a2a2a;
+        --text: #f2f2f2;
+        --muted: #a8b3a8;
+        --brand: #39d98a;
+        --brand-2: #1f9d5c;
+        --error: #c63a52;
+        --ok: #8dffb8;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at 20% 10%, #132014 0%, var(--bg) 45%);
+      }
+
+      .wrap {
+        width: min(900px, 100%);
+        margin: 0 auto;
+        padding: 20px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      h1, h2 { margin: 0 0 10px; }
+      .muted { color: var(--muted); margin: 0; }
+      .brand { color: var(--brand); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; margin: 0 0 6px; font-weight: 700; }
+
+      .row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+      input, button {
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 16px;
+      }
+
+      input {
+        flex: 1 1 280px;
+        background: #0b0b0b;
+        border: 1px solid #2f2f2f;
+        color: var(--text);
+      }
+
+      button {
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        background: linear-gradient(140deg, var(--brand), var(--brand-2));
+        color: #050505;
+      }
+
+      .msg { min-height: 20px; margin: 10px 0 0; }
+      .error { color: var(--error); }
+      .ok { color: var(--ok); }
+
+      .hidden { display: none; }
+
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .kpi {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        background: #111111;
+      }
+
+      .kpi small { color: var(--muted); display: block; }
+      .kpi strong { display: block; margin-top: 3px; font-size: 1.15rem; }
+
+      .footer-note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <p class="brand">Lama Ventures</p>
+        <h1>Investor Access Portal</h1>
+        <p class="muted">Enter your 9-digit client code to check your account value. Works as a standalone website (just open this HTML file in any browser).</p>
+      </section>
+
+      <section class="card">
+        <h2>Client Login</h2>
+        <form id="lookup-form" novalidate>
+          <label for="code">9-digit code</label>
+          <div class="row">
+            <input id="code" inputmode="numeric" maxlength="9" placeholder="Example: 394829104" required />
+            <button type="submit">Check Account</button>
+          </div>
+          <p class="muted">Demo codes: 394829104 · 115392743 · 762805921</p>
+          <p id="msg" class="msg" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="result" class="card hidden" aria-live="polite">
+        <h2 id="account-title">Account Value</h2>
+        <div id="kpis" class="kpis"></div>
+      </section>
+
+      <section class="card">
+        <p class="footer-note">No backend/database is required: account values are embedded in this webpage for demo purposes.</p>
+      </section>
+    </main>
+
+    <script>
+      const data = {
+        "394829104": {
+          clientName: "A. Sinclair Family Office",
+          initialInvestment: 4200000,
+          totalValue: 5222210
+        },
+        "115392743": {
+          clientName: "Northlight Endowment",
+          initialInvestment: 4700000,
+          totalValue: 5400000
+        },
+        "762805921": {
+          clientName: "M. Ortega",
+          initialInvestment: 1500000,
+          totalValue: 1700000
+        }
+      };
+
+      const form = document.getElementById('lookup-form');
+      const input = document.getElementById('code');
+      const msg = document.getElementById('msg');
+      const result = document.getElementById('result');
+      const kpis = document.getElementById('kpis');
+      const accountTitle = document.getElementById('account-title');
+
+      const money = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+
+      function setMsg(text, cls = '') {
+        msg.textContent = text;
+        msg.className = `msg ${cls}`.trim();
+      }
+
+      function render(client) {
+        accountTitle.textContent = `Account Value — ${client.clientName}`;
+        kpis.innerHTML = `
+          <article class="kpi"><small>Initial Investment</small><strong>${money(client.initialInvestment)}</strong></article>
+          <article class="kpi"><small>Total Value</small><strong>${money(client.totalValue)}</strong></article>
+        `;
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const code = input.value.trim();
+
+        if (!/^\d{9}$/.test(code)) {
+          setMsg('Please enter a valid 9-digit code.', 'error');
+          result.classList.add('hidden');
+          return;
+        }
+
+        const client = data[code];
+        if (!client) {
+          setMsg('Code not found. Please check and try again.', 'error');
+          result.classList.add('hidden');
+          return;
+        }
+
+        localStorage.setItem('lama_last_code', code);
+        render(client);
+        result.classList.remove('hidden');
+        setMsg('Account loaded successfully.', 'ok');
+      });
+
+      const last = localStorage.getItem('lama_last_code');
+      if (last && /^\d{9}$/.test(last)) {
+        input.value = last;
+      }
+    </script>
+  </body>
+</html>
